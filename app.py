@@ -118,9 +118,9 @@ def start_dt(start):
 
 
 @app.route('/api/v1.0/start/end/<start>/<end>')
-def st_stop():
-    start= request.args.get(start)
-    end=request.args.get(end)
+def st_stop(start,end):
+    #start= request.args.get(start)
+    #end=request.args.get(end)
     session = Session(engine)
     
     calcs= session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date >= start). filter(Measurement.date <= end).all()
