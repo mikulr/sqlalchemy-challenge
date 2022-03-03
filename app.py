@@ -26,20 +26,22 @@ app=Flask(__name__)
 @app.route("/home")
 def home():
     return (
-        f"<h1>Welcome to the Weather Analysis API!</h1><br/>"
-        f"<h2>Available Routes:</h2><br/>"
-        f"<h3>/api/v1.0/precipitation</h3><br/>" 
+        f"<h1>Welcome to the Weather Analysis API!</h1>"
+        f"<u> ** This db date range is between 2010-01-01 and 2017-08-23**</u>"
+        f"<h2>Available Routes:</h2>"
+        f"<h3>/api/v1.0/precipitation</h3>"
         f"<i>to see a dictionary of all dates and precipitation amounts.</i><br/>"
-        f"<h3>/api/v1.0/stations</h3><br/>"
+        f"<h3>/api/v1.0/stations</h3>"
         f"<i>to see a list of all stations.</i><br/>"
-        f"<h3>/api/v1.0/tobs</h3><br/>"
+        f"<h3>/api/v1.0/tobs</h3>"
         f"<i>to see temperature observations of the most active station for the last year of data.</i><br/>"
-        f"<h3>/api/v1.0/start/<start></h3><br/>"
+        f"<h3>/api/v1.0/start/<start></h3>"
         f"<i> to see a list of the minimum temperature, the average temperature, and the max temperature for all dates greater than and equal to the start date.</i><br/>"
-        f"<i> **Please enter a date in YYYY-MM-DD format after the final '/' in the route to see results.**<i/> </br>"
-        f"<h3>/api/v1.0/start/end/<start>/<end></h3><br/>"
+        f"<i> **Please enter a date in YYYY-MM-DD format after the final '/' in the route to see results.**<i/></br>"
+        f"<h3>/api/v1.0/start/end/<start>/<end></h3>"
         f"<i> to see a list of the minimum temperature, the average temperature, and the max temperature for dates between the start and end date, inclusive.</i><br/>"
-        f"<i> ** Please enter two dates in YYYY-MM-DD format with the earlier date before the final '/' in the address and the later date after.**</i> </br>"
+        f"<i> ** Please enter two dates in YYYY-MM-DD format with the earlier date before the final '/' in the address and the later date after.**</i></br>"
+        
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -69,9 +71,9 @@ def stations():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of all Station names"""
+    #Return a list of all Station names
     results2 = session.query(Station.name).all()
-    #get use close, if we do another query we will open another one
+   
     session.close()
     
     all_names = list(np.ravel(results2))
@@ -81,14 +83,16 @@ def stations():
 
 @app.route("/api/v1.0/tobs")
 def tobs():
+    
     session = Session(engine)
+    
     recent= session.query(Measurement.date).order_by(Measurement.date.desc()).first().date
     dt1 = dt.datetime.strptime(recent, '%Y-%m-%d') - dt.timedelta(days=365)
     busiest= session.query(Measurement.station, func.count(Measurement.station)).group_by(Measurement.station).order_by(func.count(Measurement.station).desc()).first()
     station_no=busiest [0]
-    #run query
+   
     results3 = session.query(Measurement.date,Measurement.tobs).filter(Measurement.date > dt1).filter(Measurement.station == station_no).all()
-    #get use close, if we do another query we will open another one
+  
     session.close()
     
     all_tobs = list(np.ravel(results3))
@@ -103,6 +107,8 @@ def start_dt(start):
     
     calcs= session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date >= start).all()
 
+    session.close()
+
     all_calcs = []
     for min, avg, max in calcs:
         calc_dict = {}
@@ -110,20 +116,18 @@ def start_dt(start):
         calc_dict["Average Temp"] = avg
         calc_dict["Maximum Temp"] = max
         all_calcs.append(calc_dict)
-    
+   
     return jsonify(all_calcs)
 
      
-    
-
-
 @app.route('/api/v1.0/start/end/<start>/<end>')
 def st_stop(start,end):
-    #start= request.args.get(start)
-    #end=request.args.get(end)
+    
     session = Session(engine)
     
-    calcs= session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date >= start). filter(Measurement.date <= end).all()
+    calcs= session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date >= start).filter(Measurement.date <= end).all()
+
+    session.close()
 
     all_calcs = []
     for min, avg, max in calcs:
@@ -134,8 +138,12 @@ def st_stop(start,end):
         all_calcs.append(calc_dict)
     
     return jsonify(all_calcs)
-    
-   # session.close()
+
+
+@app.route('/api/v1.0/start/end//')
+@app.route('/api/v1.0/start/')
+def no_date():
+      return f"**Please enter date(s) in YYYY-MM-DD format in the route to see db results.**<i/>"
 
 if __name__ == "__main__":
     app.run(debug=True)
